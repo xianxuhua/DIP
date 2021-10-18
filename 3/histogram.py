@@ -45,15 +45,16 @@ def sub_hist_equalization_with_statistic(img):
 
 
 if __name__ == '__main__':
-    img = cv.imread("/Users/xxh/projects/python/ml/3/magnified-pollen-dark.tif", 0)
+    img = cv.imread("/Users/xxh/projects/python/ml/3/aerialview-washedout.tif", 0)
     # cv.imshow("raw", img)
     # cv.imshow("res2", hist_equalization(img))
     # cv.waitKey(0)
     # cv.destroyAllWindows()
-    plt.subplot(2, 1, 1)
-    plt.hist(img)
-    plt.xlim([0, 255])
-    plt.subplot(2, 1, 2)
-    plt.hist(hist_equalization(img))
-    plt.xlim([0, 255])
+    # plt.subplot(2, 1, 1)
+    # plt.hist(img)
+    # plt.xlim([0, 255])
+    # plt.subplot(2, 1, 2)
+    # plt.hist(hist_equalization(img))
+    # plt.xlim([0, 255])
+    hist_equalization(img)
     plt.show()

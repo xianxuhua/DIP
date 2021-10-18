@@ -3,6 +3,7 @@ import numpy as np
 import math
 
 
+
 # 图像的缩放
 # 最近邻域插值法：srcX=dstX*(srcWidth/dstWidth)，srcY=dstY*(srcHeight/dstHeight)
 # srcX：原图的x点处的像素，dstX：目标图片的x点处的像素
@@ -61,7 +62,7 @@ def bi_bubic(x):
 
 
 if __name__ == '__main__':
-    img = cv.imread("./shop_qrcode.jpg")
+    img = cv.imread("/Users/xxh/projects/python/ml/2/shop_qrcode.jpg")
     cv.imshow("Image", img)
     n = 5
     cv.imshow("nearest dstImage", nearest_insert(img, n))

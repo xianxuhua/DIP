@@ -3,3 +3,5 @@
 *.jpg
 .idea
 .vscode
+base/
+.Ds_Store
