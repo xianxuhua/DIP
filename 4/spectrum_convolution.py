@@ -18,13 +18,10 @@ def normalization(res):
 def spectrum_conv(matrix, filter, fill_mode=cv.BORDER_CONSTANT):
     # 1. M*N的图像，将其填充到2M*2N(直接使用空间卷积和先DFT再乘积结果相同的条件)
     pad_matrix = cv.copyMakeBorder(matrix, 0, matrix.shape[0], 0, matrix.shape[1], fill_mode)
-    # 2. f(x,y) * (-1)**(x+y)
-    # ❌pad_matrix = np.fft.fftshift(pad_matrix)
-    for x in range(pad_matrix.shape[0]):
-        for y in range(pad_matrix.shape[1]):
-            pad_matrix[x, y] *= np.power(-1, x+y)
-    # 3. DFT
+    # 2. DFT
     pad_matrix = np.fft.fft2(pad_matrix)
+    # 3. 中心化
+    pad_matrix = np.fft.fftshift(pad_matrix)
     # 4. 构建大小为2M*2N的传递函数
     pad_filter_top = (pad_matrix.shape[0] - filter.shape[0] + 1) // 2
     pad_filter_bottom = (pad_matrix.shape[0] - filter.shape[0]) // 2
@@ -34,14 +31,10 @@ def spectrum_conv(matrix, filter, fill_mode=cv.BORDER_CONSTANT):
     # 5. F * H
     G = pad_matrix * pad_filter
     # 6. IDFT
-    # G = np.fft.ifftshift(G)
+    G = np.fft.ifftshift(G)
     G = np.real(np.fft.ifft2(G))
-    res = np.zeros(pad_matrix.shape)
-    for x in range(pad_matrix.shape[0]):
-        for y in range(pad_matrix.shape[1]):
-            res[x, y] = G[x, y] * np.power(-1, x+y)
     # 7. 取大小为M*N的区域得到g(x,y)
-    return bounds225(res[:matrix.shape[0], :matrix.shape[1]])
+    return bounds225(G[:matrix.shape[0], :matrix.shape[1]])
 
 
 def core_to_H(core, img_size: tuple):
@@ -239,7 +232,7 @@ def trap_wave_filter(size: tuple, k, ):
 
 
 if __name__ == '__main__':
-    img = cv.imread("/Users/xxh/projects/python/ml/4/integrated-ckt-damaged.tif", 0)
+    img = cv.imread("/Users/xxh/projects/python/ml/3/Fig0338(a)(blurry_moon).tif", 0)
     cv.imshow("img", img)
     # plt.subplot(2, 2, 1)
     # plt.imshow(img, 'gray')
@@ -288,13 +281,12 @@ if __name__ == '__main__':
     # cv.imshow("gauss 160", spectrum_conv(img, gauss_high_pass_filter(img.shape, 160)).astype(np.uint8))
     # cv.imshow("butter 160", spectrum_conv(img, butterworth_high_pass_filter(img.shape, 50, 4)).astype(np.uint8))
 
-    # TODO: laplace
-    # cv.imshow("res.png", spectrum_conv(img, laplace_filter(img.shape)))
+    cv.imshow("res.png", spectrum_conv(img, laplace_filter(img.shape)))
     # cv.imshow("gauss x", hist_equalization(spectrum_conv(img, 0.5 + 0.75 * gauss_high_pass_filter(img.shape, 70)).astype(np.uint8)))
     # cv.imshow("homomorphism", spectrum_conv(img, homomorphism(img.shape, 3, 0.4, 5, 20)))
-    cv.imshow("gauss band stop filter", gauss_band_stop_filter((1000, 1000), 100, 100))
-    cv.imshow("ideal band stop filter", ideal_band_stop_filter((1000, 1000), 100, 100))
-    cv.imshow("butter band stop filter", butterworth_band_stop_filter((1000, 1000), 100, 100, 2))
+    # cv.imshow("gauss band stop filter", gauss_band_stop_filter((1000, 1000), 100, 100))
+    # cv.imshow("ideal band stop filter", ideal_band_stop_filter((1000, 1000), 100, 100))
+    # cv.imshow("butter band stop filter", butterworth_band_stop_filter((1000, 1000), 100, 100, 2))
     # cv.imshow("band stop", spectrum_conv(img, band_stop_filter(img.shape, 30, 30)))
     # cv.imshow("band pass", spectrum_conv(img, band_pass_filter(img.shape, 30, 100)))
     print("success")
