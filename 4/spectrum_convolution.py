@@ -227,12 +227,32 @@ def butterworth_band_pass_filter(size: tuple, C0, W, n):
     return 1 - butterworth_band_stop_filter(size, C0, W, n)
 
 
-def trap_wave_filter(size: tuple, k, ):
-    pass
+def butterworth_notch_resistant_filter(img, uk, vk, radius=10, n=1):
+    """
+    create butterworth notch resistant filter, equation 4.155
+    param: img:    input, source image
+    param: uk:     input, int, center of the height
+    param: vk:     input, int, center of the width
+    param: radius: input, int, the radius of circle of the band pass filter, default is 10
+    param: w:      input, int, the width of the band of the filter, default is 5
+    param: n:      input, int, order of the butter worth fuction,
+    return a [0, 1] value butterworth band resistant filter
+    """
+    M, N = img.shape[1], img.shape[0]
+
+    u = np.arange(M)
+    v = np.arange(N)
+    u, v = np.meshgrid(u, v)
+    DK = np.sqrt((u - M // 2 - uk) ** 2 + (v - N // 2 - vk) ** 2)
+    D_K = np.sqrt((u - M // 2 + uk) ** 2 + (v - N // 2 + vk) ** 2)
+    D0 = radius
+    kernel = (1 / (1 + (D0 / (DK + 1e-5)) ** n)) * (1 / (1 + (D0 / (D_K + 1e-5)) ** n))
+
+    return kernel
 
 
 if __name__ == '__main__':
-    img = cv.imread("/Users/xxh/projects/python/ml/3/Fig0338(a)(blurry_moon).tif", 0)
+    img = cv.imread("/Users/xxh/projects/python/ml/4/car-moire-pattern.tif", 0)
     cv.imshow("img", img)
     # plt.subplot(2, 2, 1)
     # plt.imshow(img, 'gray')
@@ -277,11 +297,21 @@ if __name__ == '__main__':
     # cv.imshow("butterworth3", spectrum_conv(img, butterworth_low_pass_filter(img.shape, 60*5, 2.25)).astype(np.uint8))
     # cv.imshow("butterworth4", spectrum_conv(img, butterworth_low_pass_filter(img.shape, 160*5, 2.25)).astype(np.uint8))
 
-    # cv.imshow("ideal 160", spectrum_conv(img, ideal_high_pass_filter(img.shape, 160)).astype(np.uint8))
-    # cv.imshow("gauss 160", spectrum_conv(img, gauss_high_pass_filter(img.shape, 160)).astype(np.uint8))
-    # cv.imshow("butter 160", spectrum_conv(img, butterworth_high_pass_filter(img.shape, 50, 4)).astype(np.uint8))
+    # D0 = 50
+    # plt.subplot(2, 2, 1)
+    # plt.imshow(img, 'gray')
+    # plt.subplot(2, 2, 2)
+    # plt.imshow(spectrum_conv(img, ideal_high_pass_filter(img.shape, D0)).astype(np.uint8), 'gray')
+    # plt.subplot(2, 2, 3)
+    # plt.imshow(spectrum_conv(img, gauss_high_pass_filter(img.shape, D0)).astype(np.uint8), 'gray')
+    # plt.subplot(2, 2, 4)
+    # plt.imshow(spectrum_conv(img, butterworth_high_pass_filter(img.shape, D0, 4)).astype(np.uint8), 'gray')
+    # plt.show()
+    # cv.imshow("ideal high", spectrum_conv(img, ideal_high_pass_filter(img.shape, D0)).astype(np.uint8))
+    # cv.imshow("gauss high", spectrum_conv(img, gauss_high_pass_filter(img.shape, D0)).astype(np.uint8))
+    # cv.imshow("butter high", spectrum_conv(img, butterworth_high_pass_filter(img.shape, D0, 4)).astype(np.uint8))
 
-    cv.imshow("res.png", spectrum_conv(img, laplace_filter(img.shape)))
+    # cv.imshow("res.png", spectrum_conv(img, laplace_filter(img.shape)))
     # cv.imshow("gauss x", hist_equalization(spectrum_conv(img, 0.5 + 0.75 * gauss_high_pass_filter(img.shape, 70)).astype(np.uint8)))
     # cv.imshow("homomorphism", spectrum_conv(img, homomorphism(img.shape, 3, 0.4, 5, 20)))
     # cv.imshow("gauss band stop filter", gauss_band_stop_filter((1000, 1000), 100, 100))
@@ -289,6 +319,13 @@ if __name__ == '__main__':
     # cv.imshow("butter band stop filter", butterworth_band_stop_filter((1000, 1000), 100, 100, 2))
     # cv.imshow("band stop", spectrum_conv(img, band_stop_filter(img.shape, 30, 30)))
     # cv.imshow("band pass", spectrum_conv(img, band_pass_filter(img.shape, 30, 100)))
+    BNRF_1 = butterworth_notch_resistant_filter(img, radius=9, uk=60, vk=80, n=4)
+    BNRF_2 = butterworth_notch_resistant_filter(img, radius=9, uk=-60, vk=80, n=4)
+    BNRF_3 = butterworth_notch_resistant_filter(img, radius=9, uk=60, vk=160, n=4)
+    BNRF_4 = butterworth_notch_resistant_filter(img, radius=9, uk=-60, vk=160, n=4)
+    BNRF = BNRF_1 * BNRF_2 * BNRF_3 * BNRF_4
+    cv.imshow("Trap wave", spectrum_conv(img, BNRF))
     print("success")
     cv.waitKey(0)
     cv.destroyAllWindows()
+
