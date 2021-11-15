@@ -25,6 +25,7 @@ if __name__ == '__main__':
     img = cv.imread("/Users/xxh/projects/python/ml/5/book-cover.tif", 0)
     copy_right_img = cv.imread("/Users/xxh/projects/python/ml/2/shop_qrcode.jpg", 0)
     res = add_no_found_watermark(img, copy_right_img, 5, 0.01).astype(np.uint8)
+    cv.imshow("simple", add_simple_watermark(img, copy_right_img, 0.5))
     cv.imshow("res", res)
     cv.waitKey(0)
     cv.destroyAllWindows()
