@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # cv.imshow("particle", opening(removed_noise, disk(25)))
 
     # 纹理分割
-    img = cv.imread("/Users/xxh/projects/python/ml/9/Xnip2021-11-15_15-05-44.png", 0)
+    img = cv.imread("/Users/xxh/projects/python/ml/9/blobs.tif", 0)
     row, col = 2, 2
     plt.subplot(row, col, 1)
     plt.imshow(img, 'gray')
