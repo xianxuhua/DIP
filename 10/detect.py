@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
+from skimage.morphology import thin
+from skimage.filters import sobel
 
 
 def bounds225(res):
@@ -11,6 +13,10 @@ def normalization(res):
     mi, ma = np.min(res), np.max(res)
     res -= mi
     return res / (ma - mi)
+
+
+def box_core(size):
+    return np.ones((size, size)) / np.power(size, 2)
 
 
 def gauss_core(size, K, sigma):
@@ -139,64 +145,94 @@ def dog_edge_detect():
 
 
 def canny_edge_test():
+    row, col = 2, 3
+    plt.figure(figsize=[20, 15])
+
     img = cv.imread("/Users/xxh/projects/python/ml/10/headCT.tif", 0)
-    cv.imshow("img", img)
-    img = convolution(img, gauss_core(13, 1, 2))
-    # gx = convolution(img, np.array([
-    #     [-1, -2, -1],
-    #     [0, 0, 0],
-    #     [1, 2, 1]
-    # ]))
-    # gy = convolution(img, np.array([
-    #     [-1, 0, 1],
-    #     [-2, 0, 2],
-    #     [-1, 0, 1]
-    # ]))
-    # img = np.sqrt(np.power(gx, 2) + np.power(gy, 2))
-    # alpha = np.arctan2(gy, gx)
-    # angle = alpha * 180 / np.pi
-    # res = np.zeros(angle.shape)
-    #
-    # # 非极大值抑制
-    # l, r = 0, 0
-    # for x in range(1, angle.shape[0]-1):
-    #     for y in range(1, angle.shape[1]-1):
-    #         current_angle = angle[x, y]
-    #         if np.abs(current_angle) <= 22.5 or np.abs(current_angle) >= 157.5:
-    #             # 水平边缘
-    #             l, r = img[x, y-1], img[x, y+1]
-    #         elif 67.5 <= np.abs(current_angle) <= 112.5:
-    #             # 垂直边缘
-    #             l, r = img[x-1, y], img[x+1, y]
-    #         elif 112.5 <= current_angle <= 157.5 or -67.5 <= current_angle <= -22.5:
-    #             # 45度
-    #             l, r = img[x-1, y+1], img[x+1, y-1]
-    #         elif 22.5 <= current_angle <= 67.5 or -157.5 <= current_angle <= -112.5:
-    #             # -45度
-    #             l, r = img[x-1, y-1], img[x+1, y+1]
-    #         if img[x, y] < l or img[x, y] < r:
-    #             res[x, y] = 0
-    #         else:
-    #             res[x, y] = img[x, y]
-    #
-    # # 阈值处理
-    # high = 220
-    # low = 100
-    # weak = 1
-    # res = np.where(res > high, 255, res)
-    # res = np.where(res > low, weak, res)
-    #
-    # for x in range(1, res.shape[0]-1):
-    #     for y in range(1, res.shape[1]-1):
-    #         # 8邻域
-    #         if res[x-1, y-1] == weak or res[x-1, y] == weak or res[x, y-1] == weak or res[x+1, y] == weak\
-    #             or res[x, y+1] == weak or res[x+1, y+1] == weak or res[x-1, y+1] == weak or res[x+1, y-1] == weak:
-    #             res[x, y] = 255
-    #         else:
-    #             res[x, y] = 0
-    # cv.imshow("res", res)
-    #
-    cv.imshow("canny", cv.Canny(img.astype(np.uint8), 70, 200))
+    plt.subplot(row, col, 1)
+    plt.title("raw image")
+    plt.imshow(img, 'gray')
+
+    img = cv.GaussianBlur(img, [13, 13], 2)
+
+    gx = convolution(img, np.array([
+        [-1, -2, -1],
+        [0, 0, 0],
+        [1, 2, 1]
+    ]))
+    gy = convolution(img, np.array([
+        [-1, 0, 1],
+        [-2, 0, 2],
+        [-1, 0, 1]
+    ]))
+    img = np.sqrt(np.power(gx, 2) + np.power(gy, 2))
+
+    plt.subplot(row, col, 2)
+    plt.title("gradient")
+    plt.imshow(img, 'gray')
+
+    _, binary_img = cv.threshold(img, np.max(img) * 0.15, 255, cv.THRESH_BINARY)
+    plt.subplot(row, col, 3)
+    plt.title("gradient threshold")
+    plt.imshow(binary_img, 'gray')
+
+    alpha = np.arctan2(gy, gx)
+    angle = alpha * 180 / np.pi
+    res = np.zeros(angle.shape)
+
+    # 非极大值抑制
+    l, r = 0, 0
+    for x in range(1, img.shape[0] - 1):
+        for y in range(1, img.shape[1] - 1):
+            current_angle = angle[x, y]
+            if np.abs(current_angle) <= 22.5 or np.abs(current_angle) >= 157.5:
+                # 水平边缘
+                l, r = img[x - 1, y], img[x + 1, y]
+            elif 67.5 <= np.abs(current_angle) <= 112.5:
+                # 垂直边缘
+                l, r = img[x, y - 1], img[x, y + 1]
+            elif 112.5 <= current_angle <= 157.5 or -67.5 <= current_angle <= -22.5:
+                # 45度
+                l, r = img[x - 1, y + 1], img[x + 1, y - 1]
+            elif 22.5 <= current_angle <= 67.5 or -157.5 <= current_angle <= -112.5:
+                # -45度
+                l, r = img[x - 1, y - 1], img[x + 1, y + 1]
+            if img[x, y] < l or img[x, y] < r:
+                res[x, y] = 0
+            else:
+                res[x, y] = img[x, y]
+
+    plt.subplot(row, col, 4)
+    plt.title("Non maximum suppression")
+    plt.imshow(res, 'gray')
+
+    # 阈值处理
+    high = res.max() * 0.15
+    low = res.max() * 0.05
+    gNH = np.where(res >= high, res, 0)
+    gNL = np.where(res >= low, res, 0)
+    gNL = gNL - gNH
+
+    for x in range(1, res.shape[0] - 1):
+        for y in range(1, res.shape[1] - 1):
+            p = gNH[x, y]
+            # 8邻域
+            if gNL[x - 1, y - 1] == p or gNL[x - 1, y] == p or gNL[x, y - 1] == p or gNL[x + 1, y] == p \
+                    or gNL[x, y + 1] == p or gNL[x + 1, y + 1] == p or gNL[x - 1, y + 1] == p or gNL[x + 1, y - 1] == p:
+                gNL[x, y] = 255
+            else:
+                gNL[x, y] = 0
+
+    plt.subplot(row, col, 5)
+    plt.title("edge connect")
+    plt.imshow(255 - gNL, "gray")
+
+    res = thin(255 - gNL, max_iter=1)
+
+    plt.subplot(row, col, 6)
+    plt.title("canny")
+    plt.imshow(res, 'gray')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -207,5 +243,5 @@ if __name__ == '__main__':
     # log_edge_detect()
     # dog_edge_detect()
     canny_edge_test()
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # cv.waitKey(0)
+    # cv.destroyAllWindows()
